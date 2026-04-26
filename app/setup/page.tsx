@@ -3,29 +3,36 @@
 import { useEffect, useState } from "react";
 import { Brand } from "../components/Brand";
 
-type Scope = "memory" | "transcript" | "tool";
+type Scope = "memory" | "transcript" | "tool" | "mcp";
 type Urls = Partial<Record<Scope, string>>;
 
 const SCOPES: { id: Scope; title: string; blurb: string; defaultOn: boolean }[] = [
   {
     id: "tool",
-    title: "Chat tool (explicit)",
+    title: "Omi → Poke: chat tool (explicit)",
     blurb:
-      "Only forward when you explicitly invoke send_to_poke in Omi. Lowest-traffic, fully under your control.",
+      "Forward only when you invoke send_to_poke in Omi. Lowest-traffic, fully under your control.",
     defaultOn: true,
   },
   {
     id: "memory",
-    title: "Memory created",
+    title: "Omi → Poke: memory created",
     blurb:
       "Forward a summary every time Omi saves a finished conversation. Good for meeting capture and journaling.",
     defaultOn: false,
   },
   {
     id: "transcript",
-    title: "Real-time transcript",
+    title: "Omi → Poke: real-time transcript",
     blurb:
       "Forward live transcript chunks as you speak. Highest traffic — every conversation goes to Poke.",
+    defaultOn: false,
+  },
+  {
+    id: "mcp",
+    title: "MCP server (Poke as an MCP tool)",
+    blurb:
+      "Get an MCP server URL you can paste into Poke (or Claude Desktop, Cursor, etc.) to expose a send_to_poke tool. Lets MCP clients message Poke programmatically.",
     defaultOn: false,
   },
 ];
@@ -37,6 +44,7 @@ export default function SetupPage() {
     tool: true,
     memory: false,
     transcript: false,
+    mcp: false,
   });
   const [status, setStatus] = useState<"idle" | "submitting" | "ok" | "error">("idle");
   const [message, setMessage] = useState<string>("");
@@ -146,7 +154,9 @@ export default function SetupPage() {
           <p style={{ color: "#0a7d2e", fontWeight: 600 }}>Done. Paste these into your Omi app config:</p>
           {(Object.keys(urls) as Scope[]).map((kind) => (
             <div key={kind} style={{ marginTop: 16 }}>
-              <div style={{ fontWeight: 600, marginBottom: 4, textTransform: "capitalize" }}>{kind} webhook</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                {kind === "mcp" ? "MCP server URL" : `${kind} webhook`}
+              </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   readOnly

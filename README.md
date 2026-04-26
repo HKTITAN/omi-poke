@@ -37,14 +37,15 @@ graph LR
 
 **Each event type is opt-in.** During setup you toggle checkboxes for the events you want forwarded — disabled events get no URL issued, so Omi physically cannot send them. Default is **chat tool only** (most explicit, least traffic). Re-run setup any time to change the toggles.
 
-**Three event types flow Omi → Poke:**
+**Three event types flow Omi → Poke, plus an optional MCP server:**
 
 
-| Toggle     | Omi event                | What triggers it                                    | What Poke receives               | Example                                                                                                |
-| ---------- | ------------------------ | --------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| default ON | **Chat tool / action**   | You explicitly invoke `send_to_poke` in the Omi app | A single message you wrote/spoke | "Send to Poke: book a flight to Tokyo next Tuesday under $800" — Poke runs the booking workflow.       |
-| optional   | **Memory created**       | Omi finishes a conversation and saves a memory      | Title + summary + transcript     | After a meeting, Poke gets the summary and emails action items to attendees.                           |
-| optional   | **Real-time transcript** | Live audio while you're talking                     | Rolling transcript snippets      | You say "remind me to call mom tonight" — Poke schedules an SMS reminder before the conversation ends. |
+| Toggle     | Channel                  | What triggers it                                                                                              | What Poke receives               | Example                                                                                                |
+| ---------- | ------------------------ | ------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| default ON | **Omi chat tool**        | You explicitly invoke `send_to_poke` in the Omi app                                                           | A single message you wrote/spoke | "Send to Poke: book a flight to Tokyo next Tuesday under $800" — Poke runs the booking workflow.       |
+| optional   | **Omi memory created**   | Omi finishes a conversation and saves a memory                                                                | Title + summary + transcript     | After a meeting, Poke gets the summary and emails action items to attendees.                           |
+| optional   | **Omi real-time transcript** | Live audio while you're talking                                                                           | Rolling transcript snippets      | You say "remind me to call mom tonight" — Poke schedules an SMS reminder before the conversation ends. |
+| optional   | **MCP server**           | Any MCP client (Poke, Claude Desktop, Cursor, …) calls the `send_to_poke` tool exposed at `/api/mcp/<token>`  | Whatever the MCP client sends    | Add the URL to Poke's integrations to let one Poke account call another, or to your IDE for chat-driven Poke calls. |
 
 
 **Concrete use cases:**
@@ -151,8 +152,29 @@ No DB, no Redis, no KV. Cold starts are fast and cost is effectively zero.
 | POST   | `/api/omi/memory?t=…`     | "Memory created" webhook → Poke          |
 | POST   | `/api/omi/transcript?t=…` | Real-time transcript webhook → Poke      |
 | POST   | `/api/omi/tool?t=…`       | Chat tool / action → Poke                |
+| POST   | `/api/mcp/<token>`        | MCP (JSON-RPC) server, exposes `send_to_poke` tool |
 | GET    | `/api/health`             | Health check                             |
 
+
+## MCP server
+
+If you toggle **MCP server** on the setup page, you'll get a URL like:
+
+```
+https://your-project.vercel.app/api/mcp/<encrypted-token>
+```
+
+It's a minimal MCP "streamable HTTP" server (JSON-RPC 2.0) that exposes one tool:
+
+| Tool           | Args                | Effect                                                                |
+| -------------- | ------------------- | --------------------------------------------------------------------- |
+| `send_to_poke` | `{ message: string }` | Forwards `message` to your Poke assistant via the Poke v1 API.        |
+
+**Add it to Poke** — `poke.com/settings/connections/integrations/new` → MCP server → paste the URL.
+
+**Add it to Claude Desktop / Cursor / any MCP client** — register it as a remote MCP server at the URL above. The token in the path encrypts your Poke key, so each client URL is per-user.
+
+The server implements `initialize`, `tools/list`, `tools/call`, and `ping`. Notifications (e.g. `notifications/initialized`) are accepted and silently acknowledged.
 
 ## Deploy on Vercel
 

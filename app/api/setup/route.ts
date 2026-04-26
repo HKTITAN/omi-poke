@@ -9,8 +9,10 @@ export const dynamic = "force-dynamic";
 type Body = {
   token?: string;
   pokeApiKey?: string;
-  enable?: { memory?: boolean; transcript?: boolean; tool?: boolean };
+  enable?: { memory?: boolean; transcript?: boolean; tool?: boolean; mcp?: boolean };
 };
+
+const ALL_SCOPES: Scope[] = ["memory", "transcript", "tool", "mcp"];
 
 export async function POST(req: NextRequest) {
   let body: Body;
@@ -31,18 +33,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid pokeApiKey" }, { status: 400 });
   }
 
-  const wanted: Scope[] = (
-    ["memory", "transcript", "tool"] as Scope[]
-  ).filter((s) => enable?.[s]);
+  const wanted: Scope[] = ALL_SCOPES.filter((s) => enable?.[s]);
   if (wanted.length === 0) {
-    return NextResponse.json({ error: "enable at least one event type" }, { status: 400 });
+    return NextResponse.json({ error: "enable at least one option" }, { status: 400 });
   }
 
   const base = env.PUBLIC_BASE_URL;
   const urls: Partial<Record<Scope, string>> = {};
   for (const s of wanted) {
     const t = encryptClaims({ k: pokeApiKey.trim(), u: claims.uid, s, v: 1 });
-    urls[s] = `${base}/api/omi/${s}?t=${t}`;
+    urls[s] = s === "mcp" ? `${base}/api/mcp/${t}` : `${base}/api/omi/${s}?t=${t}`;
   }
   return NextResponse.json({ ok: true, uid: claims.uid, urls });
 }

@@ -15,7 +15,7 @@ function aesKey(): Buffer {
   return createHash("sha256").update(`omi-poke:aes-v1:${env.APP_SECRET}`).digest();
 }
 
-export type Scope = "memory" | "transcript" | "tool";
+export type Scope = "memory" | "transcript" | "tool" | "mcp";
 export type WebhookClaims = { k: string; u: string; s: Scope; v: 1 };
 
 export function encryptClaims(claims: WebhookClaims): string {
@@ -42,7 +42,7 @@ export function decryptClaims(token: string): WebhookClaims | null {
       obj &&
       typeof obj.k === "string" &&
       typeof obj.u === "string" &&
-      (obj.s === "memory" || obj.s === "transcript" || obj.s === "tool") &&
+      (obj.s === "memory" || obj.s === "transcript" || obj.s === "tool" || obj.s === "mcp") &&
       obj.v === 1
     ) {
       return obj as WebhookClaims;
