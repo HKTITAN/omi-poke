@@ -154,6 +154,7 @@ No DB, no Redis, no KV. Cold starts are fast and cost is effectively zero.
 | POST   | `/api/omi/tool?t=…`       | Chat tool / action → Poke                |
 | POST   | `/api/mcp/<token>`        | MCP (JSON-RPC) server, exposes `send_to_poke` tool |
 | GET    | `/api/health`             | Health check                             |
+| GET    | `/api/status`             | Setup-completed probe (returns `true`)   |
 
 
 ## MCP server
